@@ -71,6 +71,15 @@ int main(int argc, char **argv) {
 unsigned int stringHash(void *s) {
   char *string = (char *)s;
   // -- TODO --
+  unsigned long hash = 5381;
+  size_t i = 0;
+
+  while (string[i] != '\0') {
+    hash = ((hash << 5) + hash) + string[i];
+    i++;
+  }
+  return hash % 2255;
+
 }
 
 /*
@@ -81,6 +90,7 @@ int stringEquals(void *s1, void *s2) {
   char *string1 = (char *)s1;
   char *string2 = (char *)s2;
   // -- TODO --
+  return strcmp(string1, string2) == 0;
 }
 
 /*
@@ -101,6 +111,38 @@ int stringEquals(void *s1, void *s2) {
  */
 void readDictionary(char *dictName) {
   // -- TODO --
+  FILE *file = fopen(dictName, "r");
+  if (file == NULL) {
+    fprintf(stderr, "dictionary file does not exist\n");
+    exit(1);
+  }
+  size_t initLength = 60;
+  char *buffer = malloc (sizeof(char) * (initLength+1));
+  int wordLength = 0;
+  char c;
+  while (c = fgetc(file)) {
+    
+    if (c == '\n' || c == EOF) {
+      char *word = malloc(sizeof(char) * (wordLength+1));
+      buffer[wordLength] = '\0';
+      strcpy(word, buffer);
+      insertData(dictionary, word, word);
+      
+      wordLength = 0;
+      if (c == EOF) {
+        break;
+      }
+    } else {
+      if ((wordLength+1) == initLength) {
+        initLength *= 2;
+        buffer = realloc(buffer, sizeof(char)*(initLength+1));
+      }
+      buffer[wordLength] = c;
+      wordLength += 1;
+    }
+  }
+  free(buffer);
+  fclose(file);
 }
 
 /*
@@ -126,4 +168,50 @@ void readDictionary(char *dictName) {
  */
 void processInput() {
   // -- TODO --
+  size_t initLength = 60;
+  char *buffer = malloc (sizeof(char) * (initLength+1));
+  int wordLength = 0;
+  char c;
+
+  while (c = getchar()) {
+    if (isalpha(c)) {
+      if ((wordLength+1) == initLength) {
+        initLength *= 2;
+        buffer = realloc(buffer, sizeof(char) * (initLength+1));
+      }
+      buffer[wordLength] = c;
+      wordLength += 1;
+    } else {
+      if (wordLength > 0) {
+        char *word = malloc(sizeof(char) * (wordLength+1));
+        buffer[wordLength] = '\0';
+        strcpy(word, buffer);
+        
+        int found;
+        if (findData(dictionary, buffer) != NULL) {
+          found = 1;
+        } else {
+          for (int i = 1; i < wordLength; i ++) {
+            buffer[i] = tolower(buffer[i]);
+          }
+          if (findData(dictionary, buffer) != NULL) {
+            found = 1;
+          } else {
+            buffer[0] = tolower(buffer[0]);
+            found = 1 ? findData(dictionary,buffer) != NULL : 0;
+          }
+        }
+        wordLength = 0;
+        if (found) {
+          printf("%s", word);
+        } else {
+          printf("%s [sic]", word);
+        }
+      }
+      if (c == EOF) {
+        break;
+      }
+      printf("%c", c);
+    }
+  }
 }
